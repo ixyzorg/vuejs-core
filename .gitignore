@@ -1,0 +1,45 @@
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+build/
+**/dist/
+**/build/
+
+# Local env files
+.env
+.env.*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Monorepo specific
+.pnpm-store/
+**/.DS_Store
+coverage/
+**/coverage/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# System files
+npm-debug.log*
+error.log*

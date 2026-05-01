@@ -1,0 +1,9 @@
+{
+  "name": "@vue/shared",
+  "description": "工具包",
+  "module": "dist/shared.esm.js",
+  "buildOptions": {
+    "name": "VueShared"
+  },
+  "packageManager": "pnpm@10.33.2"
+}

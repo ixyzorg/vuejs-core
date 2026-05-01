@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": false,
+    "lib": ["ESNext","DOM"],
+    "types": ["node"],
+    "baseUrl": "./",
+    "paths": {
+      "@vue/*":["packages/*/src"]
+    },
+    "ignoreDeprecations": "6.0"
+  }
+}

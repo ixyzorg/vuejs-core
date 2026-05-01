@@ -1,0 +1,12 @@
+{
+  "name": "@vue/reactivity",
+  "description": "响应式模块",
+  "module": "dist/reactivity.esm.js",
+  "buildOptions": {
+    "name": "VueReactivity"
+  },
+  "packageManager": "pnpm@10.33.2",
+  "dependencies": {
+    "@vue/shared": "workspace:*"
+  }
+}
