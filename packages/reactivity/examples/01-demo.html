@@ -10,12 +10,13 @@
       import { ref, effect } from '../dist/reactivity.esm.js'
       const a = ref(1)
       effect(() => {
+        effect(() => {
+          console.log(a.value)
+        })
         console.log(a.value)
       })
-      effect(() => {
-        console.log(a.value)
-      })
-      setTimeout(() => {
+
+      setTimeout(() => {  
         a.value = 2
       }, 1000)
     </script>

@@ -38,5 +38,5 @@ export function propagate(subs) {
     queuedEffect.push(link.sub)
     link = link.nextSub
   }
-  queuedEffect.forEach(fn => fn())
+  queuedEffect.forEach(effect => effect.notify())
 }
