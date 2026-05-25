@@ -6,19 +6,39 @@
     <title>Document</title>
   </head>
   <body>
+    <div id="app"></div>
+    <button id="flag">flag</button>
+    <button id="age">age</button>
+    <button id="name">name</button>
     <script type="module">
       import { ref, effect } from '../dist/reactivity.esm.js'
-      const a = ref(1)
-      effect(() => {
-        effect(() => {
-          console.log(a.value)
-        })
-        console.log(a.value)
-      })
 
-      setTimeout(() => {  
-        a.value = 2
-      }, 1000)
+      const nameRef = ref('mason')
+      const ageRef = ref(10)
+      const flagRef = ref(true)
+      const app = document.getElementById('app')
+      const flagBtn = document.getElementById('flag')
+      const ageBtn = document.getElementById('age')
+      const nameBtn = document.getElementById('name')
+      let count = 0
+      const e = effect(() => {
+        console.count('effect次数===>')
+        if (flagRef.value) {
+          app.innerHTML = ageRef.value
+        } else {
+          app.innerHTML = nameRef.value
+        }
+      })
+      flagBtn.onclick = () => {
+        flagRef.value = !flagRef.value
+        console.dir(e.effect)
+      }
+      ageBtn.onclick = () => {
+        ageRef.value++
+      }
+      nameBtn.onclick = () => {
+        nameRef.value = nameRef.value + Math.random().toFixed(1)
+      }
     </script>
   </body>
 </html>

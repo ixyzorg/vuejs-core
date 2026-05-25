@@ -1,6 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import { effect, isRef, ref } from '../src/index'
 
+function countSubs(dep: any) {
+  let count = 0
+  let current = dep.subs
+  while (current) {
+    count++
+    current = current.nextSub
+  }
+  return count
+}
+
+function countDeps(sub: any) {
+  let count = 0
+  let current = sub.deps
+  while (current) {
+    count++
+    current = current.nextDep
+  }
+  return count
+}
+
 describe('ref', () => {
   it('re-runs effect when ref value changes', () => {
     const count = ref(1)
@@ -28,5 +48,76 @@ describe('ref', () => {
     expect(isRef(count)).toBe(true)
     expect(isRef(plain)).toBe(false)
     expect(isRef(null)).toBe(false)
+  })
+
+  it('链表节点复用,防止,更新时避免重复收集', () => {
+    const f = ref(true) as any
+    let effectRunCount = 0
+
+    const runner = effect(() => {
+      f.value
+      effectRunCount++
+    }, {} as any) as any
+
+    const firstSubLink = f.subs
+    const firstDepLink = runner.effect.deps
+
+    expect(firstSubLink).toBeDefined()
+    expect(firstDepLink).toBeDefined()
+    expect(firstSubLink).toBe(firstDepLink)
+    expect(countSubs(f)).toBe(1)
+
+    for (let i = 0; i < 5; i++) {
+      f.value = !f.value
+      expect(f.subs).toBe(firstSubLink)
+      expect(f.subsTail).toBe(firstSubLink)
+      expect(runner.effect.deps).toBe(firstDepLink)
+      expect(runner.effect.depsTail).toBe(firstDepLink)
+      expect(countSubs(f)).toBe(1)
+    }
+
+    expect(effectRunCount).toBe(6)
+  })
+
+  it('两个响应式数据在effect中也会复用链表节点', () => {
+    const f1 = ref(true) as any
+    const f2 = ref(0) as any
+    let effectRunCount = 0
+
+    const runner = effect(() => {
+      f1.value
+      f2.value
+      effectRunCount++
+    }, {} as any) as any
+
+    const firstLink1 = f1.subs
+    const firstLink2 = f2.subs
+
+    expect(firstLink1).toBeDefined()
+    expect(firstLink2).toBeDefined()
+    expect(firstLink1).not.toBe(firstLink2)
+    expect(runner.effect.deps).toBe(firstLink1)
+    expect(runner.effect.deps.nextDep).toBe(firstLink2)
+    expect(runner.effect.depsTail).toBe(firstLink2)
+    expect(countDeps(runner.effect)).toBe(2)
+    expect(countSubs(f1)).toBe(1)
+    expect(countSubs(f2)).toBe(1)
+
+    f1.value = !f1.value
+    f2.value = 1
+    f1.value = !f1.value
+    f2.value = 2
+
+    expect(f1.subs).toBe(firstLink1)
+    expect(f1.subsTail).toBe(firstLink1)
+    expect(f2.subs).toBe(firstLink2)
+    expect(f2.subsTail).toBe(firstLink2)
+    expect(runner.effect.deps).toBe(firstLink1)
+    expect(runner.effect.deps.nextDep).toBe(firstLink2)
+    expect(runner.effect.depsTail).toBe(firstLink2)
+    expect(countDeps(runner.effect)).toBe(2)
+    expect(countSubs(f1)).toBe(1)
+    expect(countSubs(f2)).toBe(1)
+    expect(effectRunCount).toBe(5)
   })
 })

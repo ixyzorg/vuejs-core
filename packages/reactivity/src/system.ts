@@ -1,7 +1,19 @@
+export interface Sub {
+  deps: Link
+  depsTail: Link
+}
+
+interface Dep {
+  subs: Link
+  subsTail: Link
+}
+
 export interface Link {
-  sub
+  sub: Sub
   nextSub: Link //next指针
   prevSub: Link //prev指针
+  dep: Dep
+  nextDep: Link
 }
 
 /**
@@ -9,14 +21,26 @@ export interface Link {
  * @param dep ref reactive computed 依赖项
  * @param sub effect 订阅者
  */
-export function link(dep, sub) {
+export function link(dep: Dep, sub: Sub) {
+  /**
+   * todo 实现Link节点的复用
+   */
+  const currentDep = sub.depsTail
+  const nextDep = currentDep === undefined ? sub.deps : sub.depsTail.nextDep
+  if (nextDep && nextDep.dep === dep) {
+    sub.depsTail = nextDep
+    return
+  }
+
   const newLink: Link = {
     sub,
     nextSub: undefined,
-    prevSub: undefined
+    prevSub: undefined,
+    dep,
+    nextDep
   }
   /**
-   * 双向链表保存subs
+   * Dep双向链表存储Link
    */
   if (dep.subsTail) {
     dep.subsTail.nextSub = newLink
@@ -24,6 +48,15 @@ export function link(dep, sub) {
     dep.subsTail = newLink
   } else {
     dep.subs = dep.subsTail = newLink
+  }
+  /**
+   * ReactiveEffect实例单向链表存储Link
+   */
+  if (sub.depsTail) {
+    sub.depsTail.nextDep = newLink
+    sub.depsTail = newLink
+  } else {
+    sub.deps = sub.depsTail = newLink
   }
 }
 

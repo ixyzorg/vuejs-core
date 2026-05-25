@@ -55,4 +55,67 @@ describe('effect', () => {
     expect(runCount).toBe(2)
     expect(a.value).toBe(2)
   })
+
+  it('cleans up stale branch dependencies when switching refs like the demo', () => {
+    const name = ref('mason')
+    const age = ref(10)
+    const flag = ref(true)
+    let dummy: string | number
+    let runCount = 0
+
+    effect(() => {
+      runCount++
+      if (flag.value) {
+        dummy = age.value
+      } else {
+        dummy = name.value
+      }
+    }, {} as any)
+
+    expect(dummy!).toBe(10)
+    expect(runCount).toBe(1)
+
+    flag.value = false
+
+    expect(dummy!).toBe('mason')
+    expect(runCount).toBe(2)
+
+    age.value++
+
+    expect(dummy!).toBe('mason')
+    expect(runCount).toBe(2)
+
+    name.value = 'vue'
+
+    expect(dummy!).toBe('vue')
+    expect(runCount).toBe(3)
+  })
+
+  it('cleans up all dependencies when rerun returns without tracking any refs', () => {
+    const age = ref(10)
+    let shouldTrack = true
+    let dummy = 0
+    let runCount = 0
+
+    const runner = effect(() => {
+      runCount++
+      if (!shouldTrack) {
+        return
+      }
+      dummy = age.value
+    }, {} as any)
+
+    expect(dummy).toBe(10)
+    expect(runCount).toBe(1)
+
+    shouldTrack = false
+    runner()
+
+    expect(runCount).toBe(2)
+
+    age.value++
+
+    expect(dummy).toBe(10)
+    expect(runCount).toBe(2)
+  })
 })
