@@ -1,6 +1,7 @@
 export interface Sub {
   deps: Link
   depsTail: Link
+  tracking: boolean
 }
 
 interface Dep {
@@ -64,11 +65,14 @@ export function link(dep: Dep, sub: Sub) {
  * @description 传播更新
  * @param subs
  */
-export function propagate(subs) {
+export function propagate(subs: Link) {
   let link = subs
   const queuedEffect = []
   while (link) {
-    queuedEffect.push(link.sub)
+    const sub = link.sub
+    if (!sub.tracking) {
+      queuedEffect.push(link.sub)
+    }
     link = link.nextSub
   }
   queuedEffect.forEach(effect => effect.notify())

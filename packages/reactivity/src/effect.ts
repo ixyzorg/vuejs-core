@@ -6,6 +6,7 @@ class ReactiveEffect {
   constructor(public fn) {}
   deps: Link
   depsTail: Link
+  tracking = false
   run() {
     const prevSub = activeSub //处理effect嵌套问题
     startTrack(this)
@@ -27,10 +28,13 @@ class ReactiveEffect {
 }
 
 function startTrack(sub: Sub) {
+  sub.tracking = true
   sub.depsTail = undefined //标记 每次重新执行时将尾节点置为undefined
 }
 
 function endTrack(sub: Sub) {
+  sub.tracking = false
+
   const depsTail = sub.depsTail
   if (depsTail) {
     if (depsTail.nextDep) {

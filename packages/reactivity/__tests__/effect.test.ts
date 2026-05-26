@@ -2,6 +2,18 @@ import { describe, expect, it, vi } from 'vitest'
 import { effect, ref } from '../src/index'
 
 describe('effect', () => {
+  it('skips recursive trigger when an effect mutates its own ref like 01-demo', () => {
+    const count = ref(0)
+    const logs: number[] = []
+
+    effect(() => {
+      logs.push(count.value++)
+    }, {} as any)
+
+    expect(logs).toEqual([0])
+    expect(count.value).toBe(1)
+  })
+
   it('handles nested effects when ref updates asynchronously', () => {
     vi.useFakeTimers()
 
