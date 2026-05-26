@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { effect, isRef, ref } from '../src/index'
+import { effect, isReactive, isRef, ref } from '../src/index'
 
 function countSubs(dep: any) {
   let count = 0
@@ -48,6 +48,31 @@ describe('ref', () => {
     expect(isRef(count)).toBe(true)
     expect(isRef(plain)).toBe(false)
     expect(isRef(null)).toBe(false)
+  })
+
+  it('converts object values to reactive proxies', () => {
+    const user = ref({ name: 'mason' })
+
+    expect(isReactive(user.value)).toBe(true)
+  })
+
+  it('tracks effects that read properties from an object ref value', () => {
+    const user = ref({ name: 'mason' })
+    let dummy = ''
+    let runCount = 0
+
+    effect(() => {
+      runCount++
+      dummy = user.value.name
+    }, {} as any)
+
+    expect(dummy).toBe('mason')
+    expect(runCount).toBe(1)
+
+    user.value.name = 'evan'
+
+    expect(dummy).toBe('evan')
+    expect(runCount).toBe(2)
   })
 
   it('链表节点复用,防止,更新时避免重复收集', () => {
