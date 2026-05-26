@@ -41,6 +41,22 @@ describe('ref', () => {
     expect(runCount).toBe(2)
   })
 
+  it('does not re-run effect when ref value stays the same', () => {
+    const count = ref(1)
+    let dummy = 0
+    let runCount = 0
+
+    effect(() => {
+      runCount++
+      dummy = count.value
+    }, {} as any)
+
+    count.value = 1
+
+    expect(dummy).toBe(1)
+    expect(runCount).toBe(1)
+  })
+
   it('isRef detects ref values correctly', () => {
     const count = ref(1)
     const plain = 1

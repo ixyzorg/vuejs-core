@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { effect, isReactive, reactive } from '../src/index'
+import { effect, isReactive, reactive, ref } from '../src/index'
 
 describe('reactive', () => {
   it('creates a proxy for object values', () => {
@@ -27,6 +27,70 @@ describe('reactive', () => {
 
     expect(dummy).toBe(2)
     expect(runCount).toBe(2)
+  })
+
+  it('re-runs effect when nested reactive object property changes', () => {
+    const state = reactive({
+      user: {
+        profile: {
+          age: 18
+        }
+      }
+    })
+    let dummy = 0
+    let runCount = 0
+
+    effect(() => {
+      runCount++
+      dummy = state.user.profile.age
+    }, {} as any)
+
+    expect(dummy).toBe(18)
+    expect(runCount).toBe(1)
+
+    state.user.profile.age = 19
+
+    expect(dummy).toBe(19)
+    expect(runCount).toBe(2)
+  })
+
+  it('unwraps ref properties and re-runs effect when assigning through reactive', () => {
+    const count = ref(1)
+    const state = reactive({ count })
+    let dummy = 0
+    let runCount = 0
+
+    effect(() => {
+      runCount++
+      dummy = state.count
+    }, {} as any)
+
+    expect(state.count).toBe(1)
+    expect(dummy).toBe(1)
+    expect(runCount).toBe(1)
+
+    state.count = 2
+
+    expect(count.value).toBe(2)
+    expect(state.count).toBe(2)
+    expect(dummy).toBe(2)
+    expect(runCount).toBe(2)
+  })
+
+  it('does not re-run effect when reactive property value stays the same', () => {
+    const state = reactive({ count: 1 })
+    let dummy = 0
+    let runCount = 0
+
+    effect(() => {
+      runCount++
+      dummy = state.count
+    }, {} as any)
+
+    state.count = 1
+
+    expect(dummy).toBe(1)
+    expect(runCount).toBe(1)
   })
 
   it('reuses the same proxy for the same original object', () => {

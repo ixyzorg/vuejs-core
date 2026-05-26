@@ -1,7 +1,7 @@
-import { isObject } from '@vue/shared'
+import { hasChanged, isObject } from '@vue/shared'
 import { link, Dep, Link, propagate } from './system'
 import { activeSub } from './effect'
-import { ReactiveFlags } from './ref'
+import { isRef, ReactiveFlags } from './ref'
 
 export function reactive(target: Object) {
   return createReactiveObject(target)
@@ -16,9 +16,24 @@ const mutableHandlers = {
       return true
     }
     track(target, p)
-    return Reflect.get(target, p, receiver)
+    const res = Reflect.get(target, p, receiver)
+    if (isRef(res)) {
+      return res.value
+    }
+    if (isObject(res)) {
+      return reactive(res)
+    }
+    return res
   },
   set(target, p, newValue, receiver) {
+    const oldVal = target[p]
+    if (isRef(oldVal) && !isRef(newValue)) {
+      oldVal.value = newValue
+      return true
+    }
+    if (!hasChanged(oldVal, newValue)) {
+      return true
+    }
     const res = Reflect.set(target, p, newValue, receiver)
     trigger(target, p)
     return res

@@ -14,13 +14,14 @@
         isReactive
       } from '../dist/reactivity.esm.js'
       // import {  } from '../../../node_modules/vue/dist/vue.esm-browser.prod.js'
-      const a1 = {
-        name: '123'
-      }
-      const a = reactive(a1)
-      const b = reactive(a1)
-
-      console.log(isReactive(a1))
+      const a = ref(1)
+      const b = reactive({
+        a
+      })
+      effect(() => {
+        console.log(b.a)
+      })
+      a.value = 2
     </script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-import { isObject } from '@vue/shared'
+import { hasChanged, isObject } from '@vue/shared'
 import { activeSub } from './effect'
 import { Link, link, propagate } from './system'
 import { reactive } from './reactive'
@@ -22,6 +22,10 @@ class RefImpl {
   }
 
   set value(newVal) {
+    const oldVal = this._value
+    if (!hasChanged(oldVal, newVal)) {
+      return
+    }
     this._value = isObject(newVal) ? reactive(newVal) : newVal
     triggerRef(this)
   }
