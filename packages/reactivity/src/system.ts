@@ -4,7 +4,7 @@ export interface Sub {
   tracking: boolean
 }
 
-interface Dep {
+export interface Dep {
   subs: Link
   subsTail: Link
 }

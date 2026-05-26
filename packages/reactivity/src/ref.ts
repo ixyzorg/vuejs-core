@@ -1,8 +1,9 @@
 import { activeSub } from './effect'
 import { Link, link, propagate } from './system'
 
-enum ReactiveFlags {
-  IS_REF = '__v_isRef'
+export enum ReactiveFlags {
+  IS_REF = '__v_isRef',
+  IS_REACTIVE='__v_isReactive'
 }
 class RefImpl {
   [ReactiveFlags.IS_REF] = true //ref判断标识
