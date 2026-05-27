@@ -71,9 +71,21 @@ export function propagate(subs: Link) {
   while (link) {
     const sub = link.sub
     if (!sub.tracking) {
-      queuedEffect.push(link.sub)
+      if (Reflect.has(sub, 'update')) {
+        processComputedProgress(sub)
+      } else {
+        queuedEffect.push(link.sub)
+      }
     }
     link = link.nextSub
   }
   queuedEffect.forEach(effect => effect.notify())
+}
+
+/**
+ *@description 更新计算属性 通知effect重新执行
+ */
+function processComputedProgress(sub) {
+  sub.update()
+  propagate(sub.subs)
 }

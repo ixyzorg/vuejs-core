@@ -11,17 +11,24 @@
         ref,
         effect,
         reactive,
-        isReactive
+        isReactive,
+        computed
       } from '../dist/reactivity.esm.js'
-      // import {  } from '../../../node_modules/vue/dist/vue.esm-browser.prod.js'
-      const a = ref(1)
-      const b = reactive({
-        a
+      // import {
+      //   computed,
+      //   ref,
+      //   effect
+      // } from '../../../node_modules/vue/dist/vue.esm-browser.prod.js'
+      const r = ref(1)
+      const c = computed(() => {
+        return r.value + 1
       })
       effect(() => {
-        console.log(b.a)
+        console.log('c.value===>', c.value)
       })
-      a.value = 2
+      setTimeout(() => {
+        r.value = 2
+      }, 1000)
     </script>
   </body>
 </html>

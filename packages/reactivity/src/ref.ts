@@ -48,7 +48,7 @@ export function isRef(r: any) {
  * @description 收集依赖
  * @param dep
  */
-function trackRef(dep) {
+export function trackRef(dep) {
   if (activeSub) {
     link(dep, activeSub)
   }

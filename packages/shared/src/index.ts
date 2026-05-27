@@ -7,3 +7,7 @@ export const isObject = (val: unknown): val is Object => {
 export const hasChanged = (val, newVal) => {
   return !Object.is(val, newVal)
 }
+
+export const isFn = (value: any): value is Function => {
+  return typeof value === 'function'
+}

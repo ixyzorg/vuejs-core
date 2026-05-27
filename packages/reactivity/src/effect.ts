@@ -2,6 +2,10 @@ import { Link, Sub } from './system'
 
 export let activeSub
 
+export function setActiveSub(sub) {
+  activeSub = sub
+}
+
 class ReactiveEffect {
   constructor(public fn) {}
   deps: Link
@@ -27,12 +31,12 @@ class ReactiveEffect {
   }
 }
 
-function startTrack(sub: Sub) {
+export function startTrack(sub: Sub) {
   sub.tracking = true
   sub.depsTail = undefined //标记 每次重新执行时将尾节点置为undefined
 }
 
-function endTrack(sub: Sub) {
+export function endTrack(sub: Sub) {
   sub.tracking = false
 
   const depsTail = sub.depsTail
