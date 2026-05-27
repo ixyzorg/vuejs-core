@@ -2,6 +2,7 @@ export interface Sub {
   deps: Link
   depsTail: Link
   tracking: boolean
+  dirty?: boolean
 }
 
 export interface Dep {
@@ -72,6 +73,7 @@ export function propagate(subs: Link) {
     const sub = link.sub
     if (!sub.tracking) {
       if (Reflect.has(sub, 'update')) {
+        sub.dirty = true
         processComputedProgress(sub)
       } else {
         queuedEffect.push(link.sub)
@@ -86,6 +88,7 @@ export function propagate(subs: Link) {
  *@description 更新计算属性 通知effect重新执行
  */
 function processComputedProgress(sub) {
-  sub.update()
-  propagate(sub.subs)
+  if (sub.subs && sub.update()) {
+    propagate(sub.subs)
+  }
 }
