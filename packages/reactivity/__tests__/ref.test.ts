@@ -41,6 +41,23 @@ describe('ref', () => {
     expect(runCount).toBe(2)
   })
 
+  it('runs effect once when a ref read multiple times changes', () => {
+    const r = ref(1)
+    let runCount = 0
+
+    effect(() => {
+      runCount++
+      r.value
+      r.value
+    }, {} as any)
+
+    expect(runCount).toBe(1)
+
+    r.value = 2
+
+    expect(runCount).toBe(2)
+  })
+
   it('does not re-run effect when ref value stays the same', () => {
     const count = ref(1)
     let dummy = 0

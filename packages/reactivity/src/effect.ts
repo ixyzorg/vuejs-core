@@ -11,6 +11,7 @@ class ReactiveEffect {
   deps: Link
   depsTail: Link
   tracking = false
+  dirty = false //
   run() {
     const prevSub = activeSub //处理effect嵌套问题
     startTrack(this)
@@ -38,7 +39,7 @@ export function startTrack(sub: Sub) {
 
 export function endTrack(sub: Sub) {
   sub.tracking = false
-
+  sub.dirty = false
   const depsTail = sub.depsTail
   if (depsTail) {
     if (depsTail.nextDep) {

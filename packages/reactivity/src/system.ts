@@ -71,9 +71,9 @@ export function propagate(subs: Link) {
   const queuedEffect = []
   while (link) {
     const sub = link.sub
-    if (!sub.tracking) {
+    if (!sub.tracking && !sub.dirty) {
+      sub.dirty = true
       if (Reflect.has(sub, 'update')) {
-        sub.dirty = true
         processComputedProgress(sub)
       } else {
         queuedEffect.push(link.sub)
