@@ -12,7 +12,8 @@
         effect,
         reactive,
         isReactive,
-        computed
+        computed,
+        watch
       } from '../dist/reactivity.esm.js'
       // import {
       //   computed,
@@ -20,15 +21,18 @@
       //   effect
       // } from '../../../node_modules/vue/dist/vue.esm-browser.prod.js'
       const r = ref(1)
-      const c = computed(() => {
-        return r.value + 1
+      const stop = watch(r, (newValue, oldValue) => {
+        console.log('newValue===>', newValue, oldValue)
+      },{
+        immediate:true
       })
-      effect(() => {
-        console.log('c.value===>', c.value)
-      })
-      setTimeout(() => {
-        r.value = 2
-      }, 1000)
+      // setTimeout(() => {
+      //   r.value = 2
+      //   setTimeout(() => {
+      //     stop()
+      //     r.value = 3
+      //   }, 1000)
+      // }, 1000)
     </script>
   </body>
 </html>
