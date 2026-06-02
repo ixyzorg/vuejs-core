@@ -21,8 +21,11 @@
       //   effect
       // } from '../../../node_modules/vue/dist/vue.esm-browser.prod.js'
       const r = ref(1)
-      const stop = watch(r, (newValue, oldValue) => {
-        console.log('newValue===>', newValue, oldValue)
+      const stop = watch(r, (newValue, oldValue,onCleanup) => {
+        console.log('newValue===>', newValue, oldValue,onCleanup)
+        onCleanup(()=>{
+          console.log(1)
+        })
       },{
         immediate:true
       })

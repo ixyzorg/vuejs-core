@@ -8,9 +8,12 @@ interface Options {
   deep?: number | true
   immediate?: true
 }
+
+type OnCleanup = (cleanupFn: () => void) => void
+
 export function watch(
   source: any,
-  callback: (newValue: any, oldValue: any) => void,
+  callback: (newValue: any, oldValue: any, onCleanup: OnCleanup) => void,
   options: Options
 ) {
   let { immediate, once, deep } = options ?? {}
@@ -42,15 +45,27 @@ export function watch(
   }
 
   let oldValue: any
+  let cleanup: (() => void) | undefined
+  function onCleanup(cleanupFn: () => void) {
+    cleanup = cleanupFn
+  }
   function job() {
+    if (cleanup) {
+      cleanup()
+      cleanup = undefined
+    }
     const newValue = effect.run()
-    callback(newValue, oldValue)
+    callback(newValue, oldValue, onCleanup)
     oldValue = newValue
   }
 
   const effect = new ReactiveEffect(getter)
   effect.scheduler = job
   const stop = () => {
+    if (cleanup) {
+      cleanup()
+      cleanup = undefined
+    }
     effect.stop()
   }
   if (immediate) {
