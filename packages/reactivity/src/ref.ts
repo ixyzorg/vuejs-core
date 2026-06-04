@@ -36,15 +36,6 @@ export function ref(value) {
 }
 
 /**
- * @description 判断是否是ref
- * @param r
- * @returns Boolean
- */
-export function isRef(r: any) {
-  return r ? r[ReactiveFlags.IS_REF] === true : false
-}
-
-/**
  * @description 收集依赖
  * @param dep
  */
@@ -59,4 +50,62 @@ export function trackRef(dep) {
  */
 function triggerRef(dep) {
   propagate(dep.subs)
+}
+
+/**
+ * @description 判断是否是ref
+ * @param r
+ * @returns Boolean
+ */
+export function isRef(r: any) {
+  return r ? r[ReactiveFlags.IS_REF] === true : false
+}
+
+class ObjectRefIml {
+  [ReactiveFlags.IS_REF] = true
+  constructor(
+    public _object,
+    public _key
+  ) {}
+  get value() {
+    return this._object[this._key]
+  }
+  set value(newVal) {
+    this._object[this._key] = newVal
+  }
+}
+
+export function toRef(target, key) {
+  return new ObjectRefIml(target, key)
+}
+
+export function toRefs(target) {
+  const res = {}
+  for (const key in target) {
+    res[key] = new ObjectRefIml(target, key)
+  }
+  return res as any
+}
+
+export function unRef(value) {
+  return isRef(value) ? value.value : value
+}
+
+export function proxyRefs(target) {
+  return new Proxy(target, {
+    get(target, p, receiver) {
+      const res = Reflect.get(target, p, receiver)
+      return unRef(res)
+    },
+    set(target, p, newValue, receiver) {
+      const oldValue = target[p]
+
+      if (isRef(oldValue) && !isRef(newValue)) {
+        oldValue.value = newValue
+        return true
+      }
+      
+      return Reflect.set(target, p, newValue, receiver)
+    }
+  })
 }

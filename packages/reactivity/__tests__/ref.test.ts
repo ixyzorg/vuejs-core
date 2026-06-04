@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { effect, isReactive, isRef, ref } from '../src/index'
+import {
+  effect,
+  isReactive,
+  isRef,
+  proxyRefs,
+  reactive,
+  ref,
+  toRef,
+  toRefs,
+  unRef
+} from '../src/index'
 
 function countSubs(dep: any) {
   let count = 0
@@ -81,6 +91,62 @@ describe('ref', () => {
     expect(isRef(count)).toBe(true)
     expect(isRef(plain)).toBe(false)
     expect(isRef(null)).toBe(false)
+  })
+
+  it('toRef keeps a property in sync with its source object', () => {
+    const state = reactive({ count: 1 })
+    const count = toRef(state, 'count')
+
+    expect(isRef(count)).toBe(true)
+    expect(count.value).toBe(1)
+
+    count.value = 2
+    expect(state.count).toBe(2)
+
+    state.count = 3
+    expect(count.value).toBe(3)
+  })
+
+  it('toRefs keeps each property in sync with its source object', () => {
+    const state = reactive({ count: 1, name: 'mason' })
+    const refs = toRefs(state)
+
+    expect(isRef(refs.count)).toBe(true)
+    expect(isRef(refs.name)).toBe(true)
+
+    refs.count.value = 2
+    expect(state.count).toBe(2)
+
+    state.name = 'evan'
+    expect(refs.name.value).toBe('evan')
+  })
+
+  it('unref returns the inner value for refs and leaves other values unchanged', () => {
+    const count = ref(1)
+    const user = { name: 'mason' }
+
+    expect(unRef(count)).toBe(1)
+    expect(unRef(user)).toBe(user)
+  })
+
+  it('proxyRefs unwraps refs on get and preserves ref assignment behavior', () => {
+    const count = ref(1)
+    const user = proxyRefs({
+      count,
+      name: 'mason'
+    })
+
+    expect(user.count).toBe(1)
+    expect(user.name).toBe('mason')
+
+    user.count = 2
+    expect(user.count).toBe(2)
+    expect(count.value).toBe(2)
+
+    const replacement = ref(3)
+    user.count = replacement
+    expect(user.count).toBe(3)
+    expect(count.value).toBe(2)
   })
 
   it('converts object values to reactive proxies', () => {
