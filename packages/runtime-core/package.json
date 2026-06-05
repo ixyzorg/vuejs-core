@@ -1,0 +1,12 @@
+{
+  "name": "@vue/runtime-core",
+  "description": "核心运行时",
+  "module": "dist/runtime-core.esm.js",
+  "buildOptions": {
+    "name": "VueRuntimeCore"
+  },
+  "packageManager": "pnpm@10.33.2",
+  "dependencies": {
+    "@vue/shared": "workspace:*"
+  }
+}
