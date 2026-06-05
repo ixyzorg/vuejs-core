@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import {
+        h,
+        createRenderer
+      } from '../../../node_modules/vue/dist/vue.esm-browser.prod.js'
+      const renderer = createRenderer({
+        insert(el, parent, anchor) {
+          parent.appendChild(el, anchor || null)
+        },
+        createElement(type) {
+          return document.createElement(type)
+        },
+        setElementText(el, text) {
+          el.textContent = text
+        },
+        remove(el) {
+          const parentNode = el.parentNode
+          parentNode?.removeChild(el)
+        },
+        createText(text) {
+          return document.createTextNode(text)
+        },
+        setText(node, text) {
+          return (node.nodeValue = text)
+        },
+        parentNode(el) {
+          return el.parentNode
+        },
+        nextSibling(el) {
+          return el.nextSibling
+        },
+        querySelector(selector) {
+          return document.querySelector(selector)
+        }
+      })
+      const vNode = h('div', 'hello')
+      console.log(renderer)
+      renderer.render(vNode, app)
+      setTimeout(() => {
+        renderer.render(null, app)
+      }, 1000)
+    </script>
+  </body>
+</html>
