@@ -12,42 +12,30 @@
         h,
         createRenderer
       } from '../../../node_modules/vue/dist/vue.esm-browser.prod.js'
-      const renderer = createRenderer({
-        insert(el, parent, anchor) {
-          parent.appendChild(el, anchor || null)
+      import { renderOptions } from '../dist/vue.esm.js'
+      const renderer = createRenderer(renderOptions)
+      const vNode1 = h(
+        'div',
+        {
+          onClick: () => {
+            console.log(1)
+          }
         },
-        createElement(type) {
-          return document.createElement(type)
+        'hello'
+      )
+      const vNode2 = h(
+        'div',
+        {
+          // onClick: () => {
+          //   console.log(2)
+          // }
         },
-        setElementText(el, text) {
-          el.textContent = text
-        },
-        remove(el) {
-          const parentNode = el.parentNode
-          parentNode?.removeChild(el)
-        },
-        createText(text) {
-          return document.createTextNode(text)
-        },
-        setText(node, text) {
-          return (node.nodeValue = text)
-        },
-        parentNode(el) {
-          return el.parentNode
-        },
-        nextSibling(el) {
-          return el.nextSibling
-        },
-        querySelector(selector) {
-          return document.querySelector(selector)
-        }
-      })
-      const vNode = h('div', 'hello')
-      console.log(renderer)
-      renderer.render(vNode, app)
+        'hello'
+      )
+      renderer.render(vNode1, app)
       setTimeout(() => {
-        renderer.render(null, app)
-      }, 1000)
+        renderer.render(vNode2, app)
+      }, 2000)
     </script>
   </body>
 </html>
