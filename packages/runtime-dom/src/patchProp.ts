@@ -1,23 +1,20 @@
 export function patchProp(el, key, prevVal, nextVal) {
   if (key === 'class') {
     patchClass(el, nextVal)
-  }
-  if (key === 'style') {
+  } else if (key === 'style') {
     patchStyle(el, prevVal, nextVal)
-  }
-
-  if (/^on[A-Z]/.test(key)) {
+  } else if (/^on[A-Z]/.test(key)) {
     patchEvent(el, key, nextVal)
+  } else {
+    patchAttrs(el, key, nextVal)
   }
-
-  patchAttrs(el, key, nextVal)
 }
 
 function patchClass(el: HTMLElement, value) {
-  if (value) {
-    el.className = value
-  } else {
+  if (value == null) {
     el.removeAttribute('class')
+  } else {
+    el.className = value
   }
 }
 
@@ -30,8 +27,8 @@ function patchStyle(el, prevVal, nextVal) {
   }
   if (prevVal) {
     for (const key in prevVal) {
-      if (!Reflect.has(nextVal, key)) {
-        style[key] = null
+      if (!nextVal || !Reflect.has(nextVal, key)) {
+        style[key] = ''
       }
     }
   }
@@ -101,10 +98,10 @@ function createInvoker(value) {
   return invoker
 }
 
-function patchAttrs<T>(el: HTMLElement, key, value) {
+function patchAttrs(el: HTMLElement, key, value) {
   if (value) {
     el.setAttribute(key, value)
   } else {
-    el.removeAttribute(value)
+    el.removeAttribute(key)
   }
 }

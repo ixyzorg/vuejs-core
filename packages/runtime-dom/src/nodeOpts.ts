@@ -1,6 +1,6 @@
 export const nodeOpts = {
-  insert(el:HTMLElement, parent, anchor) {
-    parent.appendChild(el, anchor || null)
+  insert(el: HTMLElement, parent, anchor) {
+    parent.insertBefore(el, anchor || null)
   },
   createElement(type) {
     return document.createElement(type)
@@ -26,5 +26,5 @@ export const nodeOpts = {
   },
   querySelector(selector) {
     return document.querySelector(selector)
-  },
+  }
 }
