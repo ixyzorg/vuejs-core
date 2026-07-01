@@ -1,4 +1,5 @@
 import { isArray, isObject } from '@vue/shared'
+import { createVnode, isVNode } from './vnode'
 
 export function h(type, propsOrChildren?, children?, ...extraChildren) {
   let length = arguments.length
@@ -21,19 +22,4 @@ export function h(type, propsOrChildren?, children?, ...extraChildren) {
     }
     return createVnode(type, propsOrChildren, children)
   }
-}
-
-function createVnode(type, props = null, children = null) {
-  return {
-    __v_isVNode: true,
-    type,
-    props,
-    children,
-    key: null,
-    el: null //虚拟节点要挂在的元素
-  }
-}
-
-function isVNode(value) {
-  return !!value?.__v_isVNode
 }
