@@ -14,8 +14,13 @@ class HostElement {
 const createHostRenderer = () =>
   createRenderer({
     createElement: (type: string) => new HostElement(type),
-    insert: (el: HostElement, parent: HostElement) => {
-      parent.children.push(el)
+    insert: (el: HostElement, parent: HostElement, anchor?: HostElement) => {
+      const index = anchor ? parent.children.indexOf(anchor) : -1
+      if (index > -1) {
+        parent.children.splice(index, 0, el)
+      } else {
+        parent.children.push(el)
+      }
       el.parent = parent
     },
     setElementText: (el: HostElement, text: string) => {
@@ -101,5 +106,206 @@ describe('runtime-core renderer', () => {
     expect(firstChild.parent).toBe(null)
     expect(secondChild.parent).toBe(null)
     expect(container._vnode).toBe(null)
+  })
+
+  it('patches children from an array to text without unmounting the root element', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const prevVnode = h('div', { id: 'app' }, [
+      h('h1', { id: 'title' }, 'hello'),
+    ])
+    const nextVnode = h('div', { id: 'app' }, 'world')
+
+    render(prevVnode, container)
+
+    const root = container.children[0]
+    const oldChild = root.children[0]
+
+    render(nextVnode, container)
+
+    expect(container.children).toEqual([root])
+    expect(nextVnode.el).toBe(root)
+    expect(root.text).toBe('world')
+    expect(root.children).toEqual([])
+    expect(oldChild.parent).toBe(null)
+  })
+
+  it('patches children from text to different text on the reused root element', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const prevVnode = h('div', { id: 'app' }, 'hello')
+    const nextVnode = h('div', { id: 'app' }, 'world')
+
+    render(prevVnode, container)
+
+    const root = container.children[0]
+
+    render(nextVnode, container)
+
+    expect(container.children).toEqual([root])
+    expect(nextVnode.el).toBe(root)
+    expect(root.text).toBe('world')
+    expect(root.children).toEqual([])
+  })
+
+  it('patches children from text to an array on the reused root element', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const prevVnode = h('div', { id: 'app' }, 'hello')
+    const nextVnode = h('div', { id: 'app' }, [
+      h('span', { id: 'first' }, 'one'),
+      h('span', { id: 'second' }, 'two'),
+    ])
+
+    render(prevVnode, container)
+
+    const root = container.children[0]
+
+    render(nextVnode, container)
+
+    expect(container.children).toEqual([root])
+    expect(nextVnode.el).toBe(root)
+    expect(root.text).toBe('')
+    expect(root.children).toHaveLength(2)
+    expect(root.children[0]).toMatchObject({ type: 'span', text: 'one' })
+    expect(root.children[1]).toMatchObject({ type: 'span', text: 'two' })
+    expect(root.children[0].parent).toBe(root)
+    expect(root.children[1].parent).toBe(root)
+  })
+
+  it('mounts new keyed children after a matching head sequence', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const prevVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A'),
+      h('p', { key: 'b' }, 'B'),
+    ])
+    const nextVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A updated'),
+      h('p', { key: 'b' }, 'B updated'),
+      h('p', { key: 'c' }, 'C'),
+      h('p', { key: 'd' }, 'D'),
+    ])
+
+    render(prevVnode, container)
+
+    const root = container.children[0]
+    const oldA = root.children[0]
+    const oldB = root.children[1]
+
+    render(nextVnode, container)
+
+    expect(root.children.map((child) => child.text)).toEqual([
+      'A updated',
+      'B updated',
+      'C',
+      'D',
+    ])
+    expect(root.children[0]).toBe(oldA)
+    expect(root.children[1]).toBe(oldB)
+    expect(nextVnode.children[0].el).toBe(oldA)
+    expect(nextVnode.children[1].el).toBe(oldB)
+  })
+
+  it('mounts new keyed children before a matching tail sequence', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const prevVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A'),
+      h('p', { key: 'b' }, 'B'),
+    ])
+    const nextVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'c' }, 'C'),
+      h('p', { key: 'd' }, 'D'),
+      h('p', { key: 'a' }, 'A updated'),
+      h('p', { key: 'b' }, 'B updated'),
+    ])
+
+    render(prevVnode, container)
+
+    const root = container.children[0]
+    const oldA = root.children[0]
+    const oldB = root.children[1]
+
+    render(nextVnode, container)
+
+    expect(root.children.map((child) => child.text)).toEqual([
+      'C',
+      'D',
+      'A updated',
+      'B updated',
+    ])
+    expect(root.children[2]).toBe(oldA)
+    expect(root.children[3]).toBe(oldB)
+    expect(nextVnode.children[2].el).toBe(oldA)
+    expect(nextVnode.children[3].el).toBe(oldB)
+  })
+
+  it('unmounts old keyed children after a matching head sequence', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const prevVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A'),
+      h('p', { key: 'b' }, 'B'),
+      h('p', { key: 'c' }, 'C'),
+      h('p', { key: 'd' }, 'D'),
+    ])
+    const nextVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A updated'),
+      h('p', { key: 'b' }, 'B updated'),
+    ])
+
+    render(prevVnode, container)
+
+    const root = container.children[0]
+    const oldA = root.children[0]
+    const oldB = root.children[1]
+    const oldC = root.children[2]
+    const oldD = root.children[3]
+
+    render(nextVnode, container)
+
+    expect(root.children.map((child) => child.text)).toEqual([
+      'A updated',
+      'B updated',
+    ])
+    expect(root.children[0]).toBe(oldA)
+    expect(root.children[1]).toBe(oldB)
+    expect(oldC.parent).toBe(null)
+    expect(oldD.parent).toBe(null)
+  })
+
+  it('unmounts old keyed children before a matching tail sequence', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const prevVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'c' }, 'C'),
+      h('p', { key: 'd' }, 'D'),
+      h('p', { key: 'a' }, 'A'),
+      h('p', { key: 'b' }, 'B'),
+    ])
+    const nextVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A updated'),
+      h('p', { key: 'b' }, 'B updated'),
+    ])
+
+    render(prevVnode, container)
+
+    const root = container.children[0]
+    const oldC = root.children[0]
+    const oldD = root.children[1]
+    const oldA = root.children[2]
+    const oldB = root.children[3]
+
+    render(nextVnode, container)
+
+    expect(root.children.map((child) => child.text)).toEqual([
+      'A updated',
+      'B updated',
+    ])
+    expect(root.children[0]).toBe(oldA)
+    expect(root.children[1]).toBe(oldB)
+    expect(oldC.parent).toBe(null)
+    expect(oldD.parent).toBe(null)
   })
 })
