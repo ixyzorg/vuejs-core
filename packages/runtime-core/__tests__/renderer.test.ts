@@ -11,10 +11,17 @@ class HostElement {
   constructor(public type: string) {}
 }
 
-const createHostRenderer = () =>
+const createHostRenderer = (
+  options: { onInsert?: (el: HostElement) => void } = {},
+) =>
   createRenderer({
     createElement: (type: string) => new HostElement(type),
     insert: (el: HostElement, parent: HostElement, anchor?: HostElement) => {
+      options.onInsert?.(el)
+      const currentIndex = parent.children.indexOf(el)
+      if (currentIndex > -1) {
+        parent.children.splice(currentIndex, 1)
+      }
       const index = anchor ? parent.children.indexOf(anchor) : -1
       if (index > -1) {
         parent.children.splice(index, 0, el)
@@ -306,6 +313,227 @@ describe('runtime-core renderer', () => {
     expect(root.children[0]).toBe(oldA)
     expect(root.children[1]).toBe(oldB)
     expect(oldC.parent).toBe(null)
+    expect(oldD.parent).toBe(null)
+  })
+
+  it('reorders keyed children when the first new index is zero', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const prevVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A'),
+      h('p', { key: 'b' }, 'B'),
+    ])
+    const nextVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'b' }, 'B updated'),
+      h('p', { key: 'a' }, 'A updated'),
+    ])
+
+    render(prevVnode, container)
+
+    const root = container.children[0]
+    const oldA = root.children[0]
+    const oldB = root.children[1]
+
+    render(nextVnode, container)
+
+    expect(root.children.map((child) => child.text)).toEqual([
+      'B updated',
+      'A updated',
+    ])
+    expect(root.children[0]).toBe(oldB)
+    expect(root.children[1]).toBe(oldA)
+    expect(nextVnode.children[0].el).toBe(oldB)
+    expect(nextVnode.children[1].el).toBe(oldA)
+  })
+
+  it('keeps children in the longest increasing subsequence in place during unordered diff', () => {
+    const inserted: HostElement[] = []
+    const { render } = createHostRenderer({
+      onInsert: (el) => {
+        inserted.push(el)
+      },
+    })
+    const container = new HostElement('root')
+    const prevVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A'),
+      h('p', { key: 'b' }, 'B'),
+      h('p', { key: 'c' }, 'C'),
+      h('p', { key: 'd' }, 'D'),
+      h('p', { key: 'e' }, 'E'),
+    ])
+    const nextVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A updated'),
+      h('p', { key: 'c' }, 'C updated'),
+      h('p', { key: 'd' }, 'D updated'),
+      h('p', { key: 'b' }, 'B updated'),
+      h('p', { key: 'e' }, 'E updated'),
+    ])
+
+    render(prevVnode, container)
+
+    const root = container.children[0]
+    const oldA = root.children[0]
+    const oldB = root.children[1]
+    const oldC = root.children[2]
+    const oldD = root.children[3]
+    const oldE = root.children[4]
+    inserted.length = 0
+
+    render(nextVnode, container)
+
+    expect(root.children.map((child) => child.text)).toEqual([
+      'A updated',
+      'C updated',
+      'D updated',
+      'B updated',
+      'E updated',
+    ])
+    expect(root.children[0]).toBe(oldA)
+    expect(root.children[1]).toBe(oldC)
+    expect(root.children[2]).toBe(oldD)
+    expect(root.children[3]).toBe(oldB)
+    expect(root.children[4]).toBe(oldE)
+    expect(inserted).toEqual([oldB])
+  })
+
+  it('does not move existing keyed children when their new indexes are increasing', () => {
+    const inserted: HostElement[] = []
+    const { render } = createHostRenderer({
+      onInsert: (el) => {
+        inserted.push(el)
+      },
+    })
+    const container = new HostElement('root')
+    const prevVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A'),
+      h('p', { key: 'b' }, 'B'),
+      h('p', { key: 'c' }, 'C'),
+      h('p', { key: 'd' }, 'D'),
+      h('p', { key: 'e' }, 'E'),
+    ])
+    const nextVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A updated'),
+      h('p', { key: 'c' }, 'C updated'),
+      h('p', { key: 'd' }, 'D updated'),
+      h('p', { key: 'f' }, 'F'),
+      h('p', { key: 'e' }, 'E updated'),
+    ])
+
+    render(prevVnode, container)
+
+    const root = container.children[0]
+    const oldA = root.children[0]
+    const oldB = root.children[1]
+    const oldC = root.children[2]
+    const oldD = root.children[3]
+    const oldE = root.children[4]
+    inserted.length = 0
+
+    render(nextVnode, container)
+
+    expect(root.children.map((child) => child.text)).toEqual([
+      'A updated',
+      'C updated',
+      'D updated',
+      'F',
+      'E updated',
+    ])
+    expect(root.children[0]).toBe(oldA)
+    expect(root.children[1]).toBe(oldC)
+    expect(root.children[2]).toBe(oldD)
+    expect(root.children[4]).toBe(oldE)
+    expect(root.children[3]).not.toBe(oldA)
+    expect(root.children[3]).not.toBe(oldB)
+    expect(root.children[3]).not.toBe(oldC)
+    expect(root.children[3]).not.toBe(oldD)
+    expect(root.children[3]).not.toBe(oldE)
+    expect(oldB.parent).toBe(null)
+    expect(inserted).toEqual([root.children[3]])
+  })
+
+  it('mounts new keyed children during unordered diff', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const prevVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A'),
+      h('p', { key: 'b' }, 'B'),
+      h('p', { key: 'c' }, 'C'),
+      h('p', { key: 'e' }, 'E'),
+    ])
+    const nextVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A updated'),
+      h('p', { key: 'c' }, 'C updated'),
+      h('p', { key: 'd' }, 'D'),
+      h('p', { key: 'b' }, 'B updated'),
+      h('p', { key: 'e' }, 'E updated'),
+    ])
+
+    render(prevVnode, container)
+
+    const root = container.children[0]
+    const oldA = root.children[0]
+    const oldB = root.children[1]
+    const oldC = root.children[2]
+    const oldE = root.children[3]
+
+    render(nextVnode, container)
+
+    expect(root.children.map((child) => child.text)).toEqual([
+      'A updated',
+      'C updated',
+      'D',
+      'B updated',
+      'E updated',
+    ])
+    expect(root.children[0]).toBe(oldA)
+    expect(root.children[1]).toBe(oldC)
+    expect(root.children[3]).toBe(oldB)
+    expect(root.children[4]).toBe(oldE)
+    expect(root.children[2]).not.toBe(oldA)
+    expect(root.children[2]).not.toBe(oldB)
+    expect(root.children[2]).not.toBe(oldC)
+    expect(root.children[2]).not.toBe(oldE)
+    expect(nextVnode.children[2].el).toBe(root.children[2])
+  })
+
+  it('unmounts removed keyed children during unordered diff', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const prevVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A'),
+      h('p', { key: 'b' }, 'B'),
+      h('p', { key: 'c' }, 'C'),
+      h('p', { key: 'd' }, 'D'),
+      h('p', { key: 'e' }, 'E'),
+    ])
+    const nextVnode = h('div', { id: 'app' }, [
+      h('p', { key: 'a' }, 'A updated'),
+      h('p', { key: 'c' }, 'C updated'),
+      h('p', { key: 'b' }, 'B updated'),
+      h('p', { key: 'e' }, 'E updated'),
+    ])
+
+    render(prevVnode, container)
+
+    const root = container.children[0]
+    const oldA = root.children[0]
+    const oldB = root.children[1]
+    const oldC = root.children[2]
+    const oldD = root.children[3]
+    const oldE = root.children[4]
+
+    render(nextVnode, container)
+
+    expect(root.children.map((child) => child.text)).toEqual([
+      'A updated',
+      'C updated',
+      'B updated',
+      'E updated',
+    ])
+    expect(root.children[0]).toBe(oldA)
+    expect(root.children[1]).toBe(oldC)
+    expect(root.children[2]).toBe(oldB)
+    expect(root.children[3]).toBe(oldE)
     expect(oldD.parent).toBe(null)
   })
 })

@@ -126,6 +126,61 @@ export function createRenderer(options) {
         unmount(c1[i])
         i++
       }
+    } else {
+      // 1.2乱序对比
+      /* 
+      老的c1=[a,b,c,d,e]
+      新的c2=[a,c,d,b,e] 
+      开始时 i=0 e1 = 4 e2 =4
+      双端对比完成时 i=1 e1=3 e2 =3
+    */
+      let s1 = i
+      let s2 = i
+
+      const keyToNewIndexMap = new Map()
+      const newIndexToOldIndexMap = new Array(e2 - s2 + 1)
+      let maxNewIndexSoFar = 0
+      let moved = false
+      newIndexToOldIndexMap.fill(-1)
+
+      for (let j = s2; j <= e2; j++) {
+        const n2 = c2[j]
+        keyToNewIndexMap.set(n2.key, j)
+      }
+
+      for (let j = s1; j <= e1; j++) {
+        const n1 = c1[j]
+        const newIndex = keyToNewIndexMap.get(n1.key)
+        if (newIndex !== undefined) {
+          newIndexToOldIndexMap[newIndex - s2] = j
+          if (newIndex >= maxNewIndexSoFar) {
+            maxNewIndexSoFar = newIndex
+          } else {
+            moved = true
+          }
+          patch(n1, c2[newIndex], container)
+        } else {
+          unmount(n1)
+        }
+      }
+      // 只有节点需要移动时，才需要最长递增子序列
+      const newIndexSequence = moved ? getSequence(newIndexToOldIndexMap) : []
+      let sequenceIndex = newIndexSequence.length - 1
+      //倒序插入保持顺序一致
+      for (let j = e2; j >= s2; j--) {
+        const n2 = c2[j]
+        const anchor = c2[j + 1]?.el
+        if (n2.el) {
+          const currentIndex = j - s2
+          if (moved && newIndexSequence[sequenceIndex] !== currentIndex) {
+            hostInsert(n2.el, container, anchor)
+          } else {
+            sequenceIndex--
+          }
+        } else {
+          patch(null, n2, container, anchor)
+        }
+      }
     }
   }
 
@@ -207,4 +262,62 @@ export function createRenderer(options) {
   return {
     render
   }
+}
+
+// 求最长递增子序列
+function getSequence(arr) {
+  const result = [] // result 存索引
+  const map = new Map() // key: 当前索引，value: 前驱索引
+
+  for (let i = 0; i < arr.length; i++) {
+    const item = arr[i]
+
+    if (item === -1) {
+      continue
+    }
+
+    if (result.length === 0) {
+      result.push(i)
+      continue
+    }
+
+    const lastIndex = result[result.length - 1]
+    const lastItem = arr[lastIndex]
+    // 当前值比最后一个大，直接追加
+    if (item > lastItem) {
+      map.set(i, lastIndex)
+      result.push(i)
+      continue
+    }
+
+    // 二分：找第一个 >= item 的位置
+    let left = 0
+    let right = result.length - 1
+    while (left < right) {
+      const mid = Math.floor((left + right) / 2)
+      const midItem = arr[result[mid]]
+      if (midItem < item) {
+        left = mid + 1
+      } else {
+        right = mid
+      }
+    }
+    // 替换
+    if (item < arr[result[left]]) {
+      if (left > 0) {
+        map.set(i, result[left - 1])
+      }
+      result[left] = i
+    }
+  }
+
+  // 反向追溯
+  let last = result[result.length - 1]
+  const sequence = []
+  while (last !== undefined) {
+    sequence.unshift(last)
+    last = map.get(last)
+  }
+
+  return sequence
 }
