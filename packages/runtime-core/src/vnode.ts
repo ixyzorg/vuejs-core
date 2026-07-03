@@ -16,7 +16,7 @@ export function createVnode(type, props = null, children = null) {
     type,
     props,
     children,
-    key: props?.key,
+    key: props?.key ?? null,
     el: null, //虚拟节点要挂载的元素 这个元素_vnode属性上有这个vnode对象
     shapeFlag
   }
