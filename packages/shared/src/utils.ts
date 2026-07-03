@@ -27,3 +27,7 @@ export const isNullOrUndef = (value) => {
 export const isString = (value)=>{
   return typeof value === 'string'
 }
+
+export const isNumber = (value) => {
+  return typeof value === 'number'
+}

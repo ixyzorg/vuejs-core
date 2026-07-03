@@ -1,5 +1,5 @@
 import { isNull, ShapeFlags } from '@vue/shared'
-import { isSameVnode } from './vnode'
+import { Text, isSameVnode, normalizeVNode } from './vnode'
 
 export function createRenderer(options) {
   const {
@@ -54,7 +54,8 @@ export function createRenderer(options) {
   }
 
   const mountChildren = (children, el) => {
-    for (const child of children) {
+    for (let i = 0; i < children.length; i++) {
+      const child = (children[i] = normalizeVNode(children[i]))
       patch(null, child, el)
     }
   }
@@ -82,7 +83,7 @@ export function createRenderer(options) {
 
     while (i <= e1 && i <= e2) {
       const n1 = c1[i]
-      const n2 = c2[i]
+      const n2 = (c2[i] = normalizeVNode(c2[i]))
 
       if (isSameVnode(n1, n2)) {
         patch(n1, n2, container)
@@ -99,7 +100,7 @@ export function createRenderer(options) {
     */
     while (i <= e1 && i <= e2) {
       const n1 = c1[e1]
-      const n2 = c2[e2]
+      const n2 = (c2[e2] = normalizeVNode(c2[e2]))
       if (isSameVnode(n1, n2)) {
         patch(n1, n2, container)
       } else {
@@ -117,7 +118,7 @@ export function createRenderer(options) {
       const anchor = nextPos < c2.length ? c2[nextPos]?.el : null
 
       while (i <= e2) {
-        patch(null, c2[i], container, anchor)
+        patch(null, (c2[i] = normalizeVNode(c2[i])), container, anchor)
         i++
       }
     } else if (i > e2) {
@@ -144,7 +145,7 @@ export function createRenderer(options) {
       newIndexToOldIndexMap.fill(-1)
 
       for (let j = s2; j <= e2; j++) {
-        const n2 = c2[j]
+        const n2 = (c2[j] = normalizeVNode(c2[j]))
         keyToNewIndexMap.set(n2.key, j)
       }
 
@@ -226,6 +227,31 @@ export function createRenderer(options) {
     patchChildren(n1, n2)
   }
 
+  const processElement = (n1, n2, container, anchor) => {
+    if (isNull(n1)) {
+      //挂载
+      mountElement(n2, container, anchor)
+    } else {
+      //更新
+      patchElement(n1, n2)
+    }
+  }
+
+  const processText = (n1, n2, container, anchor) => {
+    if (isNull(n1)) {
+      //挂载
+      const el = hostCreateText(n2.children)
+      n2.el = el
+      hostInsert(el,container,anchor)
+    } else {
+      //更新
+      n2.el = n1.el
+      if (n1.children !== n2.children) {
+        hostSetText(n2.el,n2.children)
+      }
+    }
+  }
+
   //#region 挂载、更新
   const patch = (n1, n2, container, anchor = null) => {
     if (n1 === n2) {
@@ -237,12 +263,15 @@ export function createRenderer(options) {
       unmount(n1)
       n1 = null
     }
-    if (isNull(n1)) {
-      //挂载
-      mountElement(n2, container, anchor)
-    } else {
-      //更新
-      patchElement(n1, n2)
+    const { shapeFlag, type } = n2
+    switch (type) {
+      case Text:
+        processText(n1, n2, container, anchor)
+        break
+      default:
+        if (shapeFlag & ShapeFlags.ELEMENT) {
+          processElement(n1, n2, container, anchor)
+        }
     }
   }
   //#endregion

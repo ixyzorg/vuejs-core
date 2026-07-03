@@ -1,4 +1,13 @@
-import { isArray, ShapeFlags, isString } from '@vue/shared'
+import { isArray, isNumber, ShapeFlags, isString } from '@vue/shared'
+
+export const Text = Symbol('v-txt')
+
+export function normalizeVNode(child) {
+  return isString(child) || isNumber(child)
+    ? createVnode(Text, null, String(child))
+    : child
+}
+
 export function createVnode(type, props = null, children = null) {
   let shapeFlag
   if (isString(type)) {
@@ -17,7 +26,7 @@ export function createVnode(type, props = null, children = null) {
     props,
     children,
     key: props?.key ?? null,
-    el: null, //虚拟节点要挂载的元素 这个元素_vnode属性上有这个vnode对象
+    el: null, //虚拟节点创建出的真实DOM
     shapeFlag
   }
 }

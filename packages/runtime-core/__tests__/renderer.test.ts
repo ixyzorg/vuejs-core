@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { h } from '../src/h'
 import { createRenderer } from '../src/renderer'
+import { Text, createVnode } from '../src/vnode'
+
+type HostNode = HostElement | HostText
 
 class HostElement {
-  children: HostElement[] = []
+  children: HostNode[] = []
   parent: HostElement | null = null
   props = new Map<string, unknown>()
   text = ''
@@ -11,12 +14,18 @@ class HostElement {
   constructor(public type: string) {}
 }
 
+class HostText {
+  parent: HostElement | null = null
+
+  constructor(public text: string) {}
+}
+
 const createHostRenderer = (
-  options: { onInsert?: (el: HostElement) => void } = {},
+  options: { onInsert?: (el: HostNode) => void } = {},
 ) =>
   createRenderer({
     createElement: (type: string) => new HostElement(type),
-    insert: (el: HostElement, parent: HostElement, anchor?: HostElement) => {
+    insert: (el: HostNode, parent: HostElement, anchor?: HostNode) => {
       options.onInsert?.(el)
       const currentIndex = parent.children.indexOf(el)
       if (currentIndex > -1) {
@@ -43,8 +52,10 @@ const createHostRenderer = (
       }
       el.parent = null
     },
-    createText: (text: string) => text,
-    setText: () => {},
+    createText: (text: string) => new HostText(text),
+    setText: (node: HostText, text: string) => {
+      node.text = text
+    },
     parentNode: (el: HostElement) => el.parent,
     nextSibling: () => null,
     querySelector: () => null,
@@ -59,6 +70,39 @@ const createHostRenderer = (
   })
 
 describe('runtime-core renderer', () => {
+  it('mounts a text node into a container', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const vnode = createVnode(Text, null, 'hello')
+
+    render(vnode, container)
+
+    expect(container.children).toHaveLength(1)
+    expect(container.children[0]).toBeInstanceOf(HostText)
+    expect(container.children[0]).toMatchObject({
+      text: 'hello',
+      parent: container,
+    })
+    expect(vnode.el).toBe(container.children[0])
+  })
+
+  it('updates a mounted text node without replacing it', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const prevVnode = createVnode(Text, null, 'hello')
+    const nextVnode = createVnode(Text, null, 'world')
+
+    render(prevVnode, container)
+
+    const textNode = container.children[0]
+
+    render(nextVnode, container)
+
+    expect(container.children).toEqual([textNode])
+    expect(textNode).toMatchObject({ text: 'world' })
+    expect(nextVnode.el).toBe(textNode)
+  })
+
   it('mounts an empty element into a container', () => {
     const { render } = createHostRenderer()
     const container = new HostElement('root')
@@ -87,6 +131,54 @@ describe('runtime-core renderer', () => {
     expect(el.props.get('id')).toBe('app')
     expect(el.text).toBe('hello')
     expect(vnode.el).toBe(el)
+  })
+
+  it("mounts h('div', ['hello', 'world']) as text node children", () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const vnode = h('div', ['hello', 'world'])
+
+    render(vnode, container)
+
+    const el = container.children[0]
+    expect(el).toBeInstanceOf(HostElement)
+    expect(el.children).toHaveLength(2)
+    expect(el.children[0]).toBeInstanceOf(HostText)
+    expect(el.children[1]).toBeInstanceOf(HostText)
+    expect(el.children.map((child) => child.text)).toEqual(['hello', 'world'])
+  })
+
+  it("mounts h('div', [1, 2]) as text node children", () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const vnode = h('div', [1, 2])
+
+    render(vnode, container)
+
+    const el = container.children[0]
+    expect(el).toBeInstanceOf(HostElement)
+    expect(el.children).toHaveLength(2)
+    expect(el.children[0]).toBeInstanceOf(HostText)
+    expect(el.children[1]).toBeInstanceOf(HostText)
+    expect(el.children.map((child) => child.text)).toEqual(['1', '2'])
+  })
+
+  it('updates primitive array children as text node children', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    const prevVnode = h('div', ['hello', 1])
+    const nextVnode = h('div', ['world', 2])
+
+    render(prevVnode, container)
+
+    const el = container.children[0]
+    const firstText = el.children[0]
+    const secondText = el.children[1]
+
+    render(nextVnode, container)
+
+    expect(el.children).toEqual([firstText, secondText])
+    expect(el.children.map((child) => child.text)).toEqual(['world', '2'])
   })
 
   it('unmounts a previously mounted vnode tree', () => {

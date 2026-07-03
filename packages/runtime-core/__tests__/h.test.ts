@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { h } from '../src/h'
+import { createVnode } from '../src/vnode'
 
 describe('runtime-core h', () => {
   it("h('div')：只传入类型时创建没有 props 和 children 的 vnode", () => {
@@ -43,6 +44,35 @@ describe('runtime-core h', () => {
       type: 'div',
       props: null,
       children: [child],
+    })
+  })
+
+  it("h('div', ['hello', 'world'])：保留数组中的文本 children", () => {
+    const vnode = h('div', ['hello', 'world'])
+
+    expect(vnode).toMatchObject({
+      type: 'div',
+      props: null,
+      children: ['hello', 'world'],
+    })
+  })
+
+  it("h('div', [1, 2])：保留数组中的数字 children", () => {
+    const vnode = h('div', [1, 2])
+
+    expect(vnode).toMatchObject({
+      type: 'div',
+      props: null,
+      children: [1, 2],
+    })
+  })
+
+  it('createVnode 会保留数组中的文本和数字 children', () => {
+    const vnode = createVnode('div', null, ['hello', 1])
+
+    expect(vnode).toMatchObject({
+      type: 'div',
+      children: ['hello', 1],
     })
   })
 
