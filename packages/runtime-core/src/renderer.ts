@@ -2,6 +2,8 @@ import { isNull, ShapeFlags } from '@vue/shared'
 import { Text, isSameVnode, normalizeVNode } from './vnode'
 import { createAppAPI } from './apiCreateApp'
 import { createComponentInstance, setupComponent } from './component'
+import { ReactiveEffect } from '@vue/reactivity'
+
 export function createRenderer(options) {
   const {
     createElement: hostCreateElement,
@@ -262,9 +264,20 @@ export function createRenderer(options) {
     const instance = createComponentInstance(vnode)
     setupComponent(instance)
     //改变this指向
-    const subTree = instance.render.call(instance.setupState)
-
-    patch(null, subTree, container, anchor)
+    const updateComponentFn = () => {
+      if (!instance.isMounted) {
+        const subTree = instance.render.call(instance.setupState)
+        patch(null, subTree, container, anchor)
+        instance.isMounted = true
+        instance.subTree = subTree
+      } else {
+        const subTree = instance.render.call(instance.setupState)
+        patch(instance.subTree, subTree, container, anchor)
+        instance.subTree = subTree
+      }
+    }
+    const effect = new ReactiveEffect(updateComponentFn)
+    effect.run()
   }
 
   function patchComponent(n1, n2) {}

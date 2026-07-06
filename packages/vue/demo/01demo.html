@@ -7,11 +7,15 @@
   </head>
   <body>
     <div id="app"></div>
+    <button id="btn">count</button>
     <script type="module">
-      import { h, render, Text, createApp,ref } from '../dist/vue.esm.js'
+      import { h, render, Text, createApp, ref } from '../dist/vue.esm.js'
       const Comp = {
-        setup(){
+        setup() {
           const count = ref(0)
+          btn.onclick = () => {
+            count.value++
+          }
           return {
             count
           }
