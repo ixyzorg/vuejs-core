@@ -263,10 +263,11 @@ export function createRenderer(options) {
     */
     const instance = createComponentInstance(vnode)
     setupComponent(instance)
-    //改变this指向
+    
+    
     const updateComponentFn = () => {
       if (!instance.isMounted) {
-        const subTree = instance.render.call(instance.setupState)
+        const subTree = instance.render.call(instance.proxy) //改变this指向
         patch(null, subTree, container, anchor)
         instance.isMounted = true
         instance.subTree = subTree
