@@ -1,6 +1,7 @@
 import { isNull, ShapeFlags } from '@vue/shared'
 import { Text, isSameVnode, normalizeVNode } from './vnode'
 import { createAppAPI } from './apiCreateApp'
+import { createComponentInstance, setupComponent } from './component'
 export function createRenderer(options) {
   const {
     createElement: hostCreateElement,
@@ -252,6 +253,32 @@ export function createRenderer(options) {
     }
   }
 
+  function mountComponent(vnode, container, anchor) {
+    /* 
+      1.创建组件实例
+      2.初始化组件状态
+      3.将组件挂载到页面
+    */
+    const instance = createComponentInstance(vnode)
+    setupComponent(instance)
+    //改变this指向
+    const subTree = instance.render.call(instance.setupState)
+
+    patch(null, subTree, container, anchor)
+  }
+
+  function patchComponent(n1, n2) {}
+
+  function processComponent(n1, n2, container, anchor) {
+    if (isNull(n1)) {
+      //挂载
+      mountComponent(n2, container, anchor)
+    } else {
+      //更新
+      patchComponent(n1, n2)
+    }
+  }
+
   //#region 挂载、更新
   const patch = (n1, n2, container, anchor = null) => {
     if (n1 === n2) {
@@ -271,6 +298,8 @@ export function createRenderer(options) {
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {
           processElement(n1, n2, container, anchor)
+        } else if (shapeFlag & ShapeFlags.COMPONENT) {
+          processComponent(n1, n2, container, anchor)
         }
     }
   }

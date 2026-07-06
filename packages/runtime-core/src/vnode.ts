@@ -1,4 +1,4 @@
-import { isArray, isNumber, ShapeFlags, isString } from '@vue/shared'
+import { isArray, isNumber, ShapeFlags, isString, isObject } from '@vue/shared'
 
 export const Text = Symbol('v-txt')
 
@@ -8,12 +8,19 @@ export function normalizeVNode(child) {
     : child
 }
 
+function normalizeChildren(child) {
+  return isNumber(child) ? String(child) : child
+}
+
 export function createVnode(type, props = null, children = null) {
+  children = normalizeChildren(children)
+
   let shapeFlag
   if (isString(type)) {
     shapeFlag = ShapeFlags.ELEMENT
+  } else if (isObject(type)) {
+    shapeFlag = ShapeFlags.STATEFUL_COMPONENT
   }
-
   if (isString(children)) {
     shapeFlag |= ShapeFlags.TEXT_CHILDREN
   } else if (isArray(children)) {
