@@ -1,6 +1,6 @@
 import { isNull, ShapeFlags } from '@vue/shared'
 import { Text, isSameVnode, normalizeVNode } from './vnode'
-
+import { createAppAPI } from './apiCreateApp'
 export function createRenderer(options) {
   const {
     createElement: hostCreateElement,
@@ -242,12 +242,12 @@ export function createRenderer(options) {
       //挂载
       const el = hostCreateText(n2.children)
       n2.el = el
-      hostInsert(el,container,anchor)
+      hostInsert(el, container, anchor)
     } else {
       //更新
       n2.el = n1.el
       if (n1.children !== n2.children) {
-        hostSetText(n2.el,n2.children)
+        hostSetText(n2.el, n2.children)
       }
     }
   }
@@ -289,7 +289,8 @@ export function createRenderer(options) {
     container._vnode = vnode
   }
   return {
-    render
+    render,
+    createApp: createAppAPI(render)
   }
 }
 
