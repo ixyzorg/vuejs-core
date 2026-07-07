@@ -7,24 +7,64 @@
   </head>
   <body>
     <div id="app"></div>
-    <button id="btn">count</button>
     <script type="module">
-      import { h, render, Text, createApp, ref } from '../dist/vue.esm.js'
-      const Comp = {
+      import { h, render, Text, createApp, ref,nextTick } from '../dist/vue.esm.js'
+      const Comp1 = {
         setup() {
           const count = ref(0)
-          btn.onclick = () => {
-            count.value++
-          }
+
           return {
             count
           }
         },
         render() {
-          return h('h1', this.count)
+          return h(
+            'div',
+            {
+              onClick: () => {
+                this.count++
+                this.count++
+                this.count++
+                const el = document.querySelector('#fmd')
+                this.$nextTick(() => {
+                  console.log(el)
+                })
+              },
+              id: 'fmd'
+            },
+            this.count,
+            this.$attrs.msg
+          )
         }
       }
-      const app = createApp(Comp, { style: { color: 'pink' } })
+
+      const Comp2 = {
+        setup(props, { attrs }) {
+          const count = ref(0)
+
+          return () => {
+            return h(
+              'div',
+              {
+                onClick: () => {
+                  count.value++
+                  count.value++
+                  count.value++
+                  const el = document.querySelector('#fmd')
+                  nextTick(() => {
+                    console.log(el)
+                  })
+                },
+                id: 'fmd'
+              },
+              count.value,
+              attrs.msg
+            )
+          }
+        }
+      }
+
+      const app = createApp(Comp1, { msg: 'hello' })
       app.mount('#app')
     </script>
   </body>

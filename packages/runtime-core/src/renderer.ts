@@ -3,6 +3,7 @@ import { Text, isSameVnode, normalizeVNode } from './vnode'
 import { createAppAPI } from './apiCreateApp'
 import { createComponentInstance, setupComponent } from './component'
 import { ReactiveEffect } from '@vue/reactivity'
+import { queueJob } from './scheduler'
 
 export function createRenderer(options) {
   const {
@@ -272,13 +273,18 @@ export function createRenderer(options) {
         instance.isMounted = true
         instance.subTree = subTree
       } else {
-        const subTree = instance.render.call(instance.setupState)
+        const subTree = instance.render.call(instance.proxy)
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
       }
     }
     const effect = new ReactiveEffect(updateComponentFn)
-    effect.run()
+    const update = effect.run.bind(effect)
+    instance.update = update
+    effect.scheduler = ()=>{
+      queueJob(update)
+    }
+    update()
   }
 
   function patchComponent(n1, n2) {}

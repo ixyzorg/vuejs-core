@@ -1,6 +1,7 @@
 import { proxyRefs } from '@vue/reactivity'
 import { initProps, normalizeProps } from './componentProps'
 import { isFn, isObject } from '@vue/shared'
+import { nextTick } from './scheduler'
 export function createComponentInstance(vnode) {
   const { type } = vnode
   const instance = {
@@ -23,7 +24,8 @@ export function createComponentInstance(vnode) {
     render: null, //保存render函数
     setupState: null, //setup函数返回值
     ctx: null,
-    proxy: null //组件代理对象便于访问setupState，以及props，attrs等
+    proxy: null, //组件代理对象便于访问setupState，以及props，attrs等
+    update:null //绑定effect中的run函数，更新重新收集依赖
   }
   instance.ctx = { _: instance }
   return instance
@@ -38,7 +40,8 @@ const publicPropertiesMap = {
   $slots: (instance) => instance.slots,
   $attrs: (instance) => instance.attrs,
   $refs: (instance) => instance.refs,
-  $nextTick: (instance) => {}
+  $nextTick: (instance) => nextTick.bind(instance),
+  $forceUpDate:(instance)=>instance.update()
 }
 
 function setupStateFulComponent(instance) {
@@ -55,9 +58,7 @@ function setupStateFulComponent(instance) {
         return Reflect.get(props, p, receiver)
       }
       if (Object.hasOwn(publicPropertiesMap, p)) {
-        console.log(p)
-
-        const getter = publicPropertiesMap[p]
+        const getter = publicPropertiesMap[p] 
         return getter(instance)
       }
     },
