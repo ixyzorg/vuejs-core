@@ -256,16 +256,7 @@ export function createRenderer(options) {
     }
   }
 
-  function mountComponent(vnode, container, anchor) {
-    /* 
-      1.创建组件实例
-      2.初始化组件状态
-      3.将组件挂载到页面
-    */
-    const instance = createComponentInstance(vnode)
-    setupComponent(instance)
-    
-    
+  function setupRenderEffect(instance, container, anchor) {
     const updateComponentFn = () => {
       if (!instance.isMounted) {
         const subTree = instance.render.call(instance.proxy) //改变this指向
@@ -281,10 +272,21 @@ export function createRenderer(options) {
     const effect = new ReactiveEffect(updateComponentFn)
     const update = effect.run.bind(effect)
     instance.update = update
-    effect.scheduler = ()=>{
-      queueJob(update)
+    effect.scheduler = () => {
+      queueJob(update) //异步更新视图
     }
     update()
+  }
+
+  function mountComponent(vnode, container, anchor) {
+    /* 
+      1.创建组件实例
+      2.初始化组件状态
+      3.将组件挂载到页面
+    */
+    const instance = createComponentInstance(vnode)
+    setupComponent(instance)
+    setupRenderEffect(instance, container, anchor)
   }
 
   function patchComponent(n1, n2) {}
