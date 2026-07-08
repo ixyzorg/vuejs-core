@@ -14,7 +14,8 @@
         Text,
         createApp,
         ref,
-        nextTick
+        nextTick,
+        getCurrentInstance
       } from '../dist/vue.esm.js'
       const Son = {
         setup(props, { slots }) {
@@ -28,6 +29,8 @@
       }
       const Parent = {
         setup() {
+          const vm = getCurrentInstance()
+          console.log(vm);
           return () => {
             return h('div', [
               h('p', 'Parent'),

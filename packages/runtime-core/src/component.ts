@@ -79,7 +79,9 @@ function setupStateFulComponent(instance) {
     },
   })
   const setupContext = createSetupContext(instance)
+  setCurrentInstance(instance) //设置组件实例 只能在setup里面调用
   const setupResult = type.setup(instance.props, setupContext)
+  unsetCurrentInstance() //清除
   handleSetupResult(instance, setupResult)
   if (!instance.render) {
     instance.render = type.render
@@ -114,4 +116,16 @@ function emit(instance, event, ...args) {
   if (isFn(handler)) {
     handler(...args)
   }
+}
+
+let currentInstance= null
+function setCurrentInstance(instance) {
+  currentInstance = instance
+}
+export function getCurrentInstance() {
+  return currentInstance
+}
+
+function unsetCurrentInstance() {
+  currentInstance = null
 }
