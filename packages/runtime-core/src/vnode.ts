@@ -1,4 +1,11 @@
-import { isArray, isNumber, ShapeFlags, isString, isObject } from '@vue/shared'
+import {
+  isArray,
+  isNumber,
+  ShapeFlags,
+  isString,
+  isObject,
+  isFn
+} from '@vue/shared'
 
 export const Text = Symbol('v-txt')
 
@@ -8,26 +15,38 @@ export function normalizeVNode(child) {
     : child
 }
 
-function normalizeChildren(child) {
-  return isNumber(child) ? String(child) : child
+function normalizeChildren(vnode, children) {
+  let { shapeFlag } = vnode
+
+  if (isArray(children)) {
+    shapeFlag |= ShapeFlags.ARRAY_CHILDREN
+  } else if (isObject(children)) {
+    if (shapeFlag & ShapeFlags.COMPONENT) {
+      shapeFlag |= ShapeFlags.SLOTS_CHILDREN
+    }
+  } else if (isFn(children)) {
+    if (shapeFlag & ShapeFlags.COMPONENT) {
+      shapeFlag |= ShapeFlags.SLOTS_CHILDREN
+      children = { default: children }
+    }
+  } else if (isNumber(children) || isString(children)) {
+    children = String(children)
+    shapeFlag |= ShapeFlags.TEXT_CHILDREN
+  }
+
+  vnode.shapeFlag = shapeFlag
+  vnode.children = children
 }
 
 export function createVnode(type, props = null, children = null) {
-  children = normalizeChildren(children)
-
-  let shapeFlag
+  let shapeFlag = 0
   if (isString(type)) {
     shapeFlag = ShapeFlags.ELEMENT
   } else if (isObject(type)) {
     shapeFlag = ShapeFlags.STATEFUL_COMPONENT
   }
-  if (isString(children)) {
-    shapeFlag |= ShapeFlags.TEXT_CHILDREN
-  } else if (isArray(children)) {
-    shapeFlag |= ShapeFlags.ARRAY_CHILDREN
-  }
 
-  return {
+  const vnode = {
     __v_isVNode: true,
     type,
     props,
@@ -35,8 +54,10 @@ export function createVnode(type, props = null, children = null) {
     key: props?.key ?? null,
     el: null, //虚拟节点创建出的真实DOM 组件的vnode上的el指向subTree的el
     shapeFlag,
-    component:null, //如果是个组件vnode，保存组件实例
+    component: null //如果是个组件vnode，保存组件实例
   }
+  normalizeChildren(vnode, children)
+  return vnode
 }
 export function isVNode(value) {
   return !!value?.__v_isVNode

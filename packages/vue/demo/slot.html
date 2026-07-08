@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import {
+        h,
+        render,
+        Text,
+        createApp,
+        ref,
+        nextTick
+      } from '../dist/vue.esm.js'
+      const Son = {
+        setup(props, { slots }) {
+          return () =>
+            h('h1', {}, [
+              // slots.header(),
+              // slots.footer({ a: '作用域插槽' }),
+              slots.default()
+            ])
+        }
+      }
+      const Parent = {
+        setup() {
+          return () => {
+            return h('div', [
+              h('p', 'Parent'),
+              h(
+                Son,
+                {},
+                // {
+                //   header: () => h('p', 'header'),
+                //   default: () => h('p', '默认插槽'),
+                //   footer: ({ a }) => h('p', 'footer', a)
+                // }
+                () => h('p', '默认插槽')
+              )
+            ])
+          }
+        }
+      }
+      const app = createApp(Parent)
+      app.mount('#app')
+    </script>
+  </body>
+</html>

@@ -2,6 +2,7 @@ import { proxyRefs } from '@vue/reactivity'
 import { initProps, normalizeProps } from './componentProps'
 import { isFn, isObject } from '@vue/shared'
 import { nextTick } from './scheduler'
+import { initSlots } from './componentSlots'
 export function createComponentInstance(vnode) {
   const { type } = vnode
   const instance = {
@@ -35,8 +36,9 @@ export function createComponentInstance(vnode) {
 }
 
 export function setupComponent(instance) {
-  initProps(instance)
-  setupStateFulComponent(instance)
+  initProps(instance) //初始化属性
+  initSlots(instance)//初始化插槽
+  setupStateFulComponent(instance) //初始化状态
 }
 
 const publicPropertiesMap = {
@@ -74,7 +76,7 @@ function setupStateFulComponent(instance) {
         return Reflect.set(setupState, p, newValue, receiver)
       }
       return true
-    }
+    },
   })
   const setupContext = createSetupContext(instance)
   const setupResult = type.setup(instance.props, setupContext)
@@ -88,6 +90,9 @@ function createSetupContext(instance) {
   return {
     get attrs() {
       return instance.attrs
+    },
+    get slots(){
+      return instance.slots
     },
     emit(event: string, ...args) {
       emit(instance, event, ...args)
