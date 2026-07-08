@@ -25,7 +25,8 @@ export function createComponentInstance(vnode) {
     setupState: null, //setup函数返回值
     ctx: null,
     proxy: null, //组件代理对象便于访问setupState，以及props，attrs等
-    update:null //绑定effect中的run函数，更新重新收集依赖
+    update: null, //绑定effect中的run函数，更新重新收集依赖
+    next: null //如果父组件传递的props或者children，保存当前组件vnode到next
   }
   instance.ctx = { _: instance }
   return instance
@@ -41,7 +42,7 @@ const publicPropertiesMap = {
   $attrs: (instance) => instance.attrs,
   $refs: (instance) => instance.refs,
   $nextTick: (instance) => nextTick.bind(instance),
-  $forceUpDate:(instance)=>instance.update()
+  $forceUpDate: (instance) => instance.update()
 }
 
 function setupStateFulComponent(instance) {
@@ -58,7 +59,7 @@ function setupStateFulComponent(instance) {
         return Reflect.get(props, p, receiver)
       }
       if (Object.hasOwn(publicPropertiesMap, p)) {
-        const getter = publicPropertiesMap[p] 
+        const getter = publicPropertiesMap[p]
         return getter(instance)
       }
     },

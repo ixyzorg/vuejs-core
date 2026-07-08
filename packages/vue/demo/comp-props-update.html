@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <button id="btn">btn</button>
+    <script type="module">
+      import {
+        h,
+        render,
+        Text,
+        createApp,
+        ref,
+        nextTick
+      } from '../dist/vue.esm.js'
+      const Son = {
+        props: ['count'],
+        setup(props) {
+          return () => h('div', {}, props.count)
+        }
+      }
+      const Parent = {
+        setup() {
+          const count = ref(0)
+          btn.onclick = () => {
+            count.value++
+          }
+          return () => h(Son, { count: count.value })
+        }
+      }
+      const app = createApp(Parent)
+      app.mount('#app')
+    </script>
+  </body>
+</html>

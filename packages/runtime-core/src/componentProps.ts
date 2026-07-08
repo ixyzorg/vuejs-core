@@ -34,3 +34,20 @@ function setFullProps(instance, rawProps, props, attrs) {
     }
   }
 }
+
+export function updateProps(instance, nextVNode) {
+  const { props, attrs } = instance
+  const rawProps = nextVNode.props
+  setFullProps(instance, rawProps, props, attrs)
+  for (const key in props) {
+    if (!Object.hasOwn(rawProps, key)) {
+      delete props[key]
+    }
+  }
+  
+  for (const key in attrs) {
+    if (!Object.hasOwn(rawProps, key)) {
+      delete attrs[key]
+    }
+  }
+}

@@ -33,8 +33,9 @@ export function createVnode(type, props = null, children = null) {
     props,
     children,
     key: props?.key ?? null,
-    el: null, //虚拟节点创建出的真实DOM
-    shapeFlag
+    el: null, //虚拟节点创建出的真实DOM 组件的vnode上的el指向subTree的el
+    shapeFlag,
+    component:null, //如果是个组件vnode，保存组件实例
   }
 }
 export function isVNode(value) {

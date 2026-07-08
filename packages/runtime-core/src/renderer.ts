@@ -4,6 +4,8 @@ import { createAppAPI } from './apiCreateApp'
 import { createComponentInstance, setupComponent } from './component'
 import { ReactiveEffect } from '@vue/reactivity'
 import { queueJob } from './scheduler'
+import { ShouldUpDateComponent } from './componentRenderUtils'
+import { updateProps } from './componentProps'
 
 export function createRenderer(options) {
   const {
@@ -255,17 +257,30 @@ export function createRenderer(options) {
       }
     }
   }
-
+  const updateComponentPreRender = (instance, nextVNode) => {
+    instance.vnode = nextVNode
+    instance.next = null
+    updateProps(instance, nextVNode)
+  }
   function setupRenderEffect(instance, container, anchor) {
     const updateComponentFn = () => {
       if (!instance.isMounted) {
         const subTree = instance.render.call(instance.proxy) //改变this指向
         patch(null, subTree, container, anchor)
         instance.isMounted = true
+        instance.vnode.el = subTree.el //组件的vnode上的el会指向subTree的el
         instance.subTree = subTree
       } else {
+        let { next } = instance
+        if (next) {
+          //父亲组件传递的props或者children改变
+          updateComponentPreRender(instance, next)
+        } else {
+          next = instance.vnode
+        }
         const subTree = instance.render.call(instance.proxy)
         patch(instance.subTree, subTree, container, anchor)
+        next.el = subTree.el //组件的vnode上的el会指向subTree的el
         instance.subTree = subTree
       }
     }
@@ -285,11 +300,22 @@ export function createRenderer(options) {
       3.将组件挂载到页面
     */
     const instance = createComponentInstance(vnode)
+    vnode.component = instance //将组件实例保存到vnode上方便后续复用
     setupComponent(instance)
     setupRenderEffect(instance, container, anchor)
   }
 
-  function patchComponent(n1, n2) {}
+  function patchComponent(n1, n2) {
+    const instance = (n2.component = n1.component)
+    //当props或者slots发生变化，则需要更新
+    if (ShouldUpDateComponent(n1, n2)) {
+      instance.next = n2
+      instance.update()
+    } else {
+      n2.el = n1.el
+      instance.vnode = n2
+    }
+  }
 
   function processComponent(n1, n2, container, anchor) {
     if (isNull(n1)) {
