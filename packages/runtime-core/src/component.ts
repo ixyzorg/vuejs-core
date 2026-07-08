@@ -17,6 +17,7 @@ export function createComponentInstance(vnode) {
     propsOptions: normalizeProps(type.props),
     props: {},
     attrs: {},
+    emit: null,
     slots: {},
     refs: {},
     subTree: null, //render的返回值
@@ -28,6 +29,7 @@ export function createComponentInstance(vnode) {
     update: null, //绑定effect中的run函数，更新重新收集依赖
     next: null //如果父组件传递的props或者children，保存当前组件vnode到next
   }
+  instance.emit = emit.bind(null, instance)
   instance.ctx = { _: instance }
   return instance
 }
@@ -40,6 +42,7 @@ export function setupComponent(instance) {
 const publicPropertiesMap = {
   $slots: (instance) => instance.slots,
   $attrs: (instance) => instance.attrs,
+  $emit: (instance) => instance.emit,
   $refs: (instance) => instance.refs,
   $nextTick: (instance) => nextTick.bind(instance),
   $forceUpDate: (instance) => instance.update()
@@ -85,6 +88,9 @@ function createSetupContext(instance) {
   return {
     get attrs() {
       return instance.attrs
+    },
+    emit(event: string, ...args) {
+      emit(instance, event, ...args)
     }
   }
 }
@@ -94,5 +100,13 @@ function handleSetupResult(instance, setupResult) {
     instance.render = setupResult
   } else if (isObject) {
     instance.setupState = proxyRefs(setupResult)
+  }
+}
+
+function emit(instance, event, ...args) {
+  event = `on${event[0].toUpperCase() + event.slice(1)}`
+  const handler = instance.vnode.props?.[event]
+  if (isFn(handler)) {
+    handler(...args)
   }
 }

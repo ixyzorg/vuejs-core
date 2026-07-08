@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import {
+        h,
+        render,
+        Text,
+        createApp,
+        ref,
+        nextTick
+      } from '../dist/vue.esm.js'
+      const Son = {
+        setup(props, { emit }) {
+          return () =>
+            h(
+              'button',
+              {
+                onClick: () => {
+                  emit('foo', 123, 456)
+                }
+              },
+              'Son'
+            )
+        }
+      }
+      const Parent = {
+        setup() {
+          return () => {
+            return h('div', [
+              h('p', 'Parent'),
+              h(Son, {
+                onFoo: (...args) => {
+                  console.log('父组件传递的事件', ...args)
+                }
+              })
+            ])
+          }
+        }
+      }
+      const app = createApp(Parent)
+      app.mount('#app')
+    </script>
+  </body>
+</html>
