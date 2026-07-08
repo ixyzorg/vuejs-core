@@ -6,7 +6,7 @@ import { ReactiveEffect } from '@vue/reactivity'
 import { queueJob } from './scheduler'
 import { ShouldUpDateComponent } from './componentRenderUtils'
 import { updateProps } from './componentProps'
-
+import { triggerHooks, ApiLiveCycle } from './apiLiveCycle'
 export function createRenderer(options) {
   const {
     createElement: hostCreateElement,
@@ -21,10 +21,19 @@ export function createRenderer(options) {
     patchProp: hostPatchProp
   } = options
 
+  const unmountComponent = (instance) => {
+    triggerHooks(instance, ApiLiveCycle.BEFORE_UNMOUNT)
+    unmount(instance.subTree)
+    triggerHooks(instance, ApiLiveCycle.UNMOUNTED)
+  }
+
   const unmount = (vnode) => {
     const { shapeFlag, type, children } = vnode
     if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
       unmountChildren(children)
+    }
+    if (shapeFlag & ShapeFlags.COMPONENT) {
+      unmountComponent(vnode.component)
     }
     hostRemove(vnode.el)
   }
@@ -266,7 +275,11 @@ export function createRenderer(options) {
     const updateComponentFn = () => {
       if (!instance.isMounted) {
         const subTree = instance.render.call(instance.proxy) //改变this指向
+
+        triggerHooks(instance, ApiLiveCycle.BEFORE_MOUNT)
         patch(null, subTree, container, anchor)
+        triggerHooks(instance, ApiLiveCycle.MOUNTED)
+
         instance.isMounted = true
         instance.vnode.el = subTree.el //组件的vnode上的el会指向subTree的el
         instance.subTree = subTree
@@ -279,7 +292,11 @@ export function createRenderer(options) {
           next = instance.vnode
         }
         const subTree = instance.render.call(instance.proxy)
+
+        triggerHooks(instance, ApiLiveCycle.BEFORE_UPDATE)
         patch(instance.subTree, subTree, container, anchor)
+        triggerHooks(instance, ApiLiveCycle.UPDATED)
+
         next.el = subTree.el //组件的vnode上的el会指向subTree的el
         instance.subTree = subTree
       }
