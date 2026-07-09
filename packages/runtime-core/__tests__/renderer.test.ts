@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ref } from '@vue/reactivity'
 import { h } from '../src/h'
 import { createRenderer } from '../src/renderer'
 import { Text, createVnode } from '../src/vnode'
@@ -627,5 +628,37 @@ describe('runtime-core renderer', () => {
     expect(root.children[2]).toBe(oldB)
     expect(root.children[3]).toBe(oldE)
     expect(oldD.parent).toBe(null)
+  })
+
+  it('sets refs like a parent render function', () => {
+    const { render } = createHostRenderer()
+    const container = new HostElement('root')
+    let elRef
+    let childRef
+    const Son = {
+      setup(_props, { expose }) {
+        const str = ref('son')
+        const foo = () => 'Son expose foo'
+
+        expose({ foo, str })
+
+        return () => h('section', 'son')
+      },
+    }
+    const Parent = {
+      setup() {
+        elRef = ref(null)
+        childRef = ref(null)
+
+        return () => h('div', { ref: elRef }, [h(Son, { ref: childRef })])
+      },
+    }
+
+    render(h(Parent), container)
+
+    expect(elRef.value.type).toBe('div')
+    expect(childRef.value.foo()).toBe('Son expose foo')
+    expect(childRef.value.str).toBe('son')
+    expect(childRef.value.$el.type).toBe('section')
   })
 })

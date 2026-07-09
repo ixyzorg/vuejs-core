@@ -44,8 +44,7 @@ export function createVnode(type, props = null, children = null) {
     shapeFlag = ShapeFlags.ELEMENT
   } else if (isObject(type)) {
     shapeFlag = ShapeFlags.STATEFUL_COMPONENT
-  }
-
+  }  
   const vnode = {
     __v_isVNode: true,
     type,
@@ -54,7 +53,8 @@ export function createVnode(type, props = null, children = null) {
     key: props?.key ?? null,
     el: null, //虚拟节点创建出的真实DOM 组件的vnode上的el指向subTree的el
     shapeFlag,
-    component: null //如果是个组件vnode，保存组件实例
+    component: null, //如果是个组件vnode，保存组件实例
+    ref: props?.ref //绑定props上的ref
   }
   normalizeChildren(vnode, children)
   return vnode

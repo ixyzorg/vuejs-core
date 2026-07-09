@@ -28,7 +28,8 @@ export function createComponentInstance(vnode) {
     ctx: null,
     proxy: null, //组件代理对象便于访问setupState，以及props，attrs等
     update: null, //绑定effect中的run函数，更新重新收集依赖
-    next: null //如果父组件传递的props或者children，保存当前组件vnode到next
+    next: null, //如果父组件传递的props或者children，保存当前组件vnode到next
+    exposed: null //绑定用户暴露的exposed
   }
   instance.emit = emit.bind(null, instance)
   instance.ctx = { _: instance }
@@ -37,11 +38,12 @@ export function createComponentInstance(vnode) {
 
 export function setupComponent(instance) {
   initProps(instance) //初始化属性
-  initSlots(instance)//初始化插槽
+  initSlots(instance) //初始化插槽
   setupStateFulComponent(instance) //初始化状态
 }
 
 const publicPropertiesMap = {
+  $el: (instance) => instance.vnode.el,
   $slots: (instance) => instance.slots,
   $attrs: (instance) => instance.attrs,
   $emit: (instance) => instance.emit,
@@ -76,7 +78,7 @@ function setupStateFulComponent(instance) {
         return Reflect.set(setupState, p, newValue, receiver)
       }
       return true
-    },
+    }
   })
   const setupContext = createSetupContext(instance)
   setCurrentInstance(instance) //设置组件实例 只能在setup里面调用
@@ -93,11 +95,14 @@ function createSetupContext(instance) {
     get attrs() {
       return instance.attrs
     },
-    get slots(){
+    get slots() {
       return instance.slots
     },
     emit(event: string, ...args) {
       emit(instance, event, ...args)
+    },
+    expose(exposed) {
+      instance.exposed = exposed
     }
   }
 }
@@ -118,7 +123,7 @@ function emit(instance, event, ...args) {
   }
 }
 
-let currentInstance= null
+let currentInstance = null
 function setCurrentInstance(instance) {
   currentInstance = instance
 }
@@ -128,4 +133,28 @@ export function getCurrentInstance() {
 
 function unsetCurrentInstance() {
   currentInstance = null
+}
+
+
+/**
+ * @description 暴露组件公开的属性
+ * @param instance 
+ * @returns 
+ */
+export function getComponentPublicInstance(instance) {
+  if (instance.exposed) {
+    instance.exposedProxy = new Proxy(proxyRefs(instance.exposed), {
+      get(target, p, receiver) {
+        if (p in target) {
+          return target[p]
+        }
+        if (p in publicPropertiesMap) {
+          return publicPropertiesMap[p](instance)
+        }
+      }
+    })
+    return instance.exposedProxy
+  } else {
+    return instance.proxy
+  }
 }

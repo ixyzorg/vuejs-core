@@ -7,6 +7,7 @@ import { queueJob } from './scheduler'
 import { ShouldUpDateComponent } from './componentRenderUtils'
 import { updateProps } from './componentProps'
 import { triggerHooks, ApiLiveCycle } from './apiLiveCycle'
+import { setRef } from './renderTemplateRef'
 export function createRenderer(options) {
   const {
     createElement: hostCreateElement,
@@ -355,7 +356,7 @@ export function createRenderer(options) {
       unmount(n1)
       n1 = null
     }
-    const { shapeFlag, type } = n2
+    const { shapeFlag, type,ref } = n2
     switch (type) {
       case Text:
         processText(n1, n2, container, anchor)
@@ -366,6 +367,11 @@ export function createRenderer(options) {
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
           processComponent(n1, n2, container, anchor)
         }
+
+        if (ref != null) {
+          setRef(ref,n2)
+        }
+        
     }
   }
   //#endregion

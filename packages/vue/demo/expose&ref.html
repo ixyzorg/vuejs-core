@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { h, createApp, ref, onMounted } from '../dist/vue.esm.js'
+
+      const Son = {
+        setup(props, { attrs, slots, emit, expose }) {
+          const str = ref('son')
+          expose({
+            foo: () => {
+              console.log('Son expose foo')
+            },
+            str
+          })
+          return () => h('div', 'son')
+        }
+      }
+
+      const Parent = {
+        setup() {
+          const elRef = ref(null)
+          const childRef = ref(null)
+
+          onMounted(() => {
+            console.log(elRef.value)
+            console.log(childRef.value.$el);
+            
+          })
+          // return () => h(Son)
+          return () => h('div', { ref: elRef }, [h(Son, { ref: childRef })])
+        }
+      }
+      const app = createApp(Parent)
+      app.mount('#app')
+    </script>
+  </body>
+</html>
